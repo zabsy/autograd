@@ -53,7 +53,7 @@ class MLP:
     def __call__(self, x):
         for layer in self.layers:
             x = layer(x)
-        return x
+        return x[0] if len(x) == 1 else x 
     
     def parameters(self):
         params = []
@@ -63,21 +63,27 @@ class MLP:
         return params
     
 
-# Training the network:
+    def zero_grad(self):
+        for p in self.parameters():
+            p.grad = 0.0
+
+    def step(self, lr):
+        for p in self.parameters():
+            p.data -= lr * p.grad
+    
+
 
 def mse_loss(preds, targets):
+    # Need to flatten preds if nested
+    if isinstance(preds[0], list):
+        preds = [p for batch in preds for p in batch]
+    
     loss = Value(0.0)
     for p, t in zip(preds, targets):
-        loss += (p - t) **2
-    return loss
+        t_val = t if isinstance(t, Value) else Value(t)
+        loss += (p - t_val) ** 2
+    return loss / len(preds)  # Normalize by batch size
 
-def zero_grad(model):
-    for p in model.parameters():
-        p.grad = 0.0
-
-def step(model, lr):
-    for p in model.parameters():
-        p.data -= lr * p.grad
 
 
 
