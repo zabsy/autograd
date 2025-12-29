@@ -54,22 +54,14 @@ class Value:
         return out
     
     def __pow__(self, other):
-        other = other if isinstance(other, Value) else Value(other)
-        out = Value(self.data ** other.data, (self, other), '**')
-
+        out = Value(self.data ** other, (self,), f'**{other}')
+    
         def _backward():
-            # d/dx (x^y) = y * x^(y-1)
-            self.grad += other.data * (self.data ** (other.data - 1)) * out.grad
-
-            # d/dy (x^y) = x^y * ln(x)
-            # only valid for x > 0
-            if self.data > 0:
-                other.grad += math.log(self.data) * out.data * out.grad
-            else:
-                raise ValueError('Gradient of x^y error')
-
+            self.grad += other * (self.data ** (other - 1)) * out.grad
+    
         out._backward = _backward
         return out
+
 
 
     def __rpow__(self, other):
